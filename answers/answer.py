@@ -83,9 +83,12 @@ def count(filename):
     Test file: tests/test_count.py
     Note: The return value should be an integer
     '''
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    num_trees = 0
+    with open(filename, "r") as file:
+        lines = len(file.readlines())
+    return lines-1
+    #raise NotImplementedError
 
 def parks(filename):
     '''
@@ -95,8 +98,15 @@ def parks(filename):
     Note: The return value should be an integer
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    num_trees_inPark = 0
+    with open(filename, "r") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            if row[6]:
+                num_trees_inPark += 1
+    return num_trees_inPark
+    #raise NotImplementedError
 
 def uniq_parks(filename):
     '''
@@ -107,8 +117,17 @@ def uniq_parks(filename):
     Note: The return value should be a string with one park name per line
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    unique_parks = set()
+    with open(filename, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            if row[6]:
+                unique_parks.add(row[6] + "\n")
+    sorted_unique_parks = sorted(unique_parks)
+    sorted_unique_parks_string = "".join(sorted_unique_parks)
+    return sorted_unique_parks_string
+    #raise NotImplementedError
 
 def uniq_parks_counts(filename):
     '''
