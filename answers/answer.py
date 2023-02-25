@@ -41,6 +41,8 @@ you should use them. Don't modify them!
 
 #Initialize a spark session.
 def init_spark():
+    import findspark
+    findspark.init()
     spark = SparkSession \
         .builder \
         .appName("Python Spark SQL basic example") \
@@ -140,8 +142,33 @@ def uniq_parks_counts(filename):
           Have a look at the file *tests/list_parks_count.txt* to get the exact return format.
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # create an empty dictionary to store the count of trees treated in each park
+    tree_counts = {}
+    # open the CSV file and read its content
+    with open(filename, 'r', encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        # iterate over each row in the CSV file
+        for row in reader:
+            # get the name of the park from the current row
+            park_name = row["Nom_parc"]
+            # check if the park is already in the dictionary
+            if park_name in tree_counts:
+                # if it is, increment the count of trees treated by 1
+                tree_counts[park_name] += 1
+            else:
+                # if it is not, add it to the dictionary with a count of 1
+                tree_counts[park_name] = 1
+
+    # sort the dictionary by the park name
+    sorted_tree_counts = sorted(tree_counts.items())
+    sorted_tree_counts.pop(0)
+
+    # create a string with the park name and its count, separated by a comma, for each park in the dictionary
+    result = ''
+    for park, count in sorted_tree_counts:
+        result += f'{park},{count}\n'
+    return result
+    #raise NotImplementedError
 
 def frequent_parks_count(filename):
     '''
@@ -154,8 +181,33 @@ def frequent_parks_count(filename):
           Have a look at the file *tests/frequent.txt* to get the exact return format.
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # create an empty dictionary to store the count of trees treated in each park
+    tree_counts = {}
+    # open the CSV file and read its content
+    with open(filename, 'r', encoding="utf-8") as file:
+        reader = csv.DictReader(file)
+        # iterate over each row in the CSV file
+        for row in reader:
+            # get the name of the park from the current row
+            park_name = row["Nom_parc"]
+            # check if the park is already in the dictionary
+            if park_name in tree_counts:
+                # if it is, increment the count of trees treated by 1
+                tree_counts[park_name] += 1
+            else:
+                # if it is not, add it to the dictionary with a count of 1
+                tree_counts[park_name] = 1
+
+    # sort the dictionary by the park name
+    sorted_tree_counts = sorted(tree_counts.items(), key=lambda x: (-x[1], x[0]))
+    sorted_tree_counts.pop(0)
+
+    # create a string with the park name and its count, separated by a comma, for each park in the dictionary
+    result = ''
+    for park, count in sorted_tree_counts[:10]:
+        result += f'{park},{count}\n'
+    return result
+    #raise NotImplementedError
 
 def intersection(filename1, filename2):
     '''
@@ -167,8 +219,29 @@ def intersection(filename1, filename2):
           Have a look at the file *tests/intersection.txt* to get the exact return format.
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    parks_2015 = set()
+    with open(filename1, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            if row[6]:
+                parks_2015.add(row[6])
+
+
+    parks_2016 = set()
+    with open(filename2, "r", encoding="utf-8") as file:
+        reader = csv.reader(file)
+        next(reader)
+        for row in reader:
+            if row[6]:
+                parks_2016.add(row[6])
+
+    common_parks = sorted(parks_2015 & parks_2016)
+    result = ''
+    for park in common_parks:
+        result += f'{park}\n'
+    return result
+    # raise NotImplementedError
 
 '''
 SPARK RDD IMPLEMENTATION
@@ -193,10 +266,19 @@ def count_rdd(filename):
     Note: The return value should be an integer
     '''
 
+    # initialize a SparkSession
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    # create an RDD from the text file
+    rdd = spark.sparkContext.textFile(filename)
+
+    # count the number of trees
+    num_trees = rdd.count() - 1
+
+    # return the number of trees
+    return num_trees
+
+    #raise NotImplementedError
 
 def parks_rdd(filename):
     '''
@@ -206,10 +288,22 @@ def parks_rdd(filename):
     Note: The return value should be an integer
     '''
 
+    # initialize a SparkSession
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    # create an RDD from the text file
+    rdd = spark.sparkContext.textFile(filename)
+
+    # parse the CSV text using the csv module since dataset contains commas inside data entries
+    csv_rdd = rdd.map(lambda line: next(csv.reader([line])))
+
+    # filter for non-empty entries in 7th column
+    in_park1 = csv_rdd.filter(lambda row: len(row[6]) > 0).count() - 1
+
+    # return the output as an integer
+    return in_park1
+
+    #raise NotImplementedError
 
 def uniq_parks_rdd(filename):
     '''
@@ -220,26 +314,67 @@ def uniq_parks_rdd(filename):
     Note: The return value should be a CSV string
     '''
 
+    # initialize a SparkSession
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    # create an RDD from the text file
+    sc = spark.sparkContext.textFile(filename)
+
+    # parse the CSV text using the csv module since dataset contains commas inside data entries
+    rdd = sc.map(lambda line: next(csv.reader([line])))
+
+    # remove the header
+    rdd = rdd.filter(lambda line: line[6] != "Nom_parc")
+
+    # filter for non-empty "Nom_parc" entries, extract the unique entries, sort by alphabetical order
+    rdd = rdd.filter(lambda row: len(row[6]) > 0).map(lambda row: row[6]).distinct().sortBy(lambda x: x)
+
+    # one entry per line, converting to csv string format
+    rdd = rdd.map(lambda park: park + "\n").reduce(lambda x, y: x+y)
+
+    # return the csv string
+    return rdd
+
+    #raise NotImplementedError
 
 def uniq_parks_counts_rdd(filename):
     '''
-    Write a Python script using RDDs that counts the number of trees treated in
-    each park and prints a list of "park,count" pairs in a CSV manner ordered
-    alphabetically by the park name. Every element in the list must be printed
-    on a new line.
-    Test file: tests/test_uniq_parks_counts_rdd.py
-    Note: The return value should be a CSV string
-          Have a look at the file *tests/list_parks_count.txt* to get the exact return format.
-    '''
+        Write a Python script using RDDs that counts the number of trees treated in
+        each park and prints a list of "park,count" pairs in a CSV manner ordered
+        alphabetically by the park name. Every element in the list must be printed
+        on a new line.
+        Test file: tests/test_uniq_parks_counts_rdd.py
+        Note: The return value should be a CSV string
+             Have a look at the file *tests/list_parks_count.txt* to get the exact return format.
+        '''
 
+    # initialize a SparkSession
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    # create an RDD from the text file
+    sc = spark.sparkContext.textFile(filename)
+
+    # parse the CSV text using the csv module since dataset contains commas inside data entries
+    rdd = sc.map(lambda line: next(csv.reader([line])))
+
+    # remove the header
+    rdd = rdd.filter(lambda header: header[6] != "Nom_parc")
+
+    # grouping by the 7th column, and sorting alphabetically
+    rdd = rdd.map(lambda x: (x[6], 1)).reduceByKey(lambda x,y:x+y).sortBy(lambda x: x)
+
+    # removing the first element in the RDD
+    rdd = rdd.mapPartitionsWithIndex(lambda i, it: iter(list(it)[1:]) if i == 0 else it)
+
+    # convert each element to a comma-seperated string -> [[1, 2, 3], [4, 5, 6], [7, 8, 9]] -> ['1,2,3', '4,5,6', '7,8,9']
+    rdd = rdd.map(lambda row: ','.join([str(elem) for elem in row]))
+
+    # appends a new line character to each element and then concatenates them -> '1,2,3\n4,5,6\n7,8,9\n'
+    rdd = rdd.map(lambda park: park + "\n").reduce(lambda x, y: x + y)
+
+    # return the csv string
+    return rdd
+    #raise NotImplementedError
 
 def frequent_parks_count_rdd(filename):
     '''
@@ -252,10 +387,34 @@ def frequent_parks_count_rdd(filename):
           Have a look at the file *tests/frequent.txt* to get the exact return format.
     '''
 
+    # initialize a SparkSession
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    # create an RDD from the text file
+    sc = spark.sparkContext.textFile(filename)
+
+    # parse the CSV text using the csv module since dataset contains commas inside data entries
+    rdd = sc.map(lambda line: next(csv.reader([line])))
+
+    # remove the header
+    rdd = rdd.filter(lambda header: header[6] != "Nom_parc")
+
+    # grouping by the 7th column, and sorting alphabetically
+    rdd = rdd.map(lambda x: (x[6], 1)).reduceByKey(lambda x, y: x + y).sortBy(lambda x: x[1], False)
+
+    # removing the first element in the RDD
+    rdd = rdd.mapPartitionsWithIndex(lambda i, it: iter(list(it)[1:]) if i == 0 else it)
+
+    # extract the first 10 elements
+    rdd = rdd.take(10)
+
+    result = ""
+    for park, count in rdd:
+        result += f'{park},{count}\n'
+    print(result)
+    return result
+
+    #raise NotImplementedError
 
 def intersection_rdd(filename1, filename2):
     '''
@@ -267,10 +426,35 @@ def intersection_rdd(filename1, filename2):
           Have a look at the file *tests/intersection.txt* to get the exact return format.
     '''
 
+    # initialize a SparkSession
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+
+    # create an RDD from the text file
+    sc1 = spark.sparkContext.textFile(filename1)
+    sc2 = spark.sparkContext.textFile(filename2)
+
+    # parse the CSV text using the csv module since dataset contains commas inside data entries
+    rdd1 = sc1.map(lambda line: next(csv.reader([line])))
+    rdd2 = sc2.map(lambda line: next(csv.reader([line])))
+
+    # remove the header
+    rdd1 = rdd1.filter(lambda header: header[6] != "Nom_parc")
+    rdd2 = rdd2.filter(lambda header: header[6] != "Nom_parc")
+
+    intersection_rdd = rdd1.map(lambda x: x[6]).intersection(rdd2.map(lambda x: x[6]))
+
+    # removing the first element in the RDD
+    intersection_rdd = intersection_rdd.mapPartitionsWithIndex(lambda i, it: iter(list(it)[1:]) if i == 0 else it)
+
+    intersection_rdd = intersection_rdd.sortBy(lambda x: x).collect()
+
+    result = ""
+    for park in intersection_rdd:
+        result += f'{park}\n'
+    print(result)
+    return result
+
+    #raise NotImplementedError
 
 
 '''
