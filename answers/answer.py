@@ -11,6 +11,7 @@ import dask.bag as db
 import dask.dataframe as df  # you can use Dask bags or dataframes
 from csv import reader
 
+
 '''
 INTRODUCTION
 
@@ -38,6 +39,8 @@ HELPER FUNCTIONS
 These functions are here to help you. Instructions will tell you when
 you should use them. Don't modify them!
 '''
+
+
 
 #Initialize a spark session.
 def init_spark():
@@ -481,10 +484,20 @@ def count_df(filename):
     Note: The return value should be an integer
     '''
 
+    # initialize
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    sc = spark.builder.getOrCreate()
+
+    # create the dataframe
+    df = sc.read.csv(filename, header=True, mode="DROPMALFORMED")
+
+    # get the number of rows
+    count = df.count()
+
+    # return
+    return count
+
+    #raise NotImplementedError
 
 def parks_df(filename):
     '''
@@ -494,10 +507,22 @@ def parks_df(filename):
     Note: The return value should be an integer
     '''
 
+    # initialize
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    sc = spark.builder.getOrCreate()
+
+    # create the dataframe
+    df = sc.read.csv(filename,header=True, mode="DROPMALFORMED")
+
+    # remove the rows with empty entries in "Nom_parc" column
+    # count the rows
+
+    count = df.na.drop(subset=["Nom_parc"]).count()
+
+    # return
+    return count
+
+    #raise NotImplementedError
 
 def uniq_parks_df(filename):
     '''
@@ -508,10 +533,25 @@ def uniq_parks_df(filename):
     Note: The return value should be a CSV string
     '''
 
+    # initialize
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    sc = spark.builder.getOrCreate()
+
+    # create the dataframe
+    df = sc.read.csv(filename, header=True, mode="DROPMALFORMED")
+
+    # remove the rows with empty entries in "Nom_parc" column
+    df = df.na.drop(subset=["Nom_parc"])
+
+    # select the "Nom_parc" column
+    # get the distinct entries in that column
+    # order the dataframe by alphabetical order
+    df= df.select("Nom_parc").distinct().orderBy("Nom_parc")
+
+    # return
+    return toCSVLine(df)
+
+    #raise NotImplementedError
 
 def uniq_parks_counts_df(filename):
     '''
@@ -524,10 +564,26 @@ def uniq_parks_counts_df(filename):
           Have a look at the file *tests/list_parks_count.txt* to get the exact return format.
     '''
 
+    # initialize
     spark = init_spark()
-    
+    sc = spark.builder.getOrCreate()
+
+    # create the dataframe
+    df = sc.read.csv(filename, header=True, mode="DROPMALFORMED")
+
+    # remove the rows with empty entries in "Nom_parc" column
+    df = df.na.drop(subset=["Nom_parc"])
+
+    # group the "Nom_parc" column
+    # ??
+    # order the dataframe by alphabetical order
+    df = df.groupBy("Nom_parc").count().orderBy("Nom_parc")
+
+    # return
+    return toCSVLine(df)
+
     # ADD YOUR CODE HERE
-    raise NotImplementedError
+    #raise NotImplementedError
 
 def frequent_parks_count_df(filename):
     '''
@@ -540,10 +596,31 @@ def frequent_parks_count_df(filename):
           Have a look at the file *tests/frequent.txt* to get the exact return format.
     '''
 
+    # initialize
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    sc = spark.builder.getOrCreate()
+
+    # create the dataframe
+    df = sc.read.csv(filename, header=True, mode="DROPMALFORMED")
+
+    # remove the rows with empty entries in "Nom_parc" column
+    df = df.na.drop(subset=["Nom_parc"])
+
+    # group the "Nom_parc" column
+    # ??
+    # order the dataframe by alphabetical order
+    df = df.groupBy("Nom_parc").count().orderBy("Nom_parc")
+
+    # order in descending manner the "count" column
+    df = df.orderBy("count", ascending=False)
+
+    # show only 10 rows
+    df = df.limit(10)
+
+    # return
+    return toCSVLine(df)
+
+    # raise NotImplementedError
 
 def intersection_df(filename1, filename2):
     '''
@@ -555,10 +632,32 @@ def intersection_df(filename1, filename2):
           Have a look at the file *tests/intersection.txt* to get the exact return format.
     '''
 
+    # initialize
     spark = init_spark()
-    
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    sc1 = spark.builder.getOrCreate()
+    sc2 = spark.builder.getOrCreate()
+
+    # create the dataframe
+    df1 = sc1.read.csv(filename1, header=True, mode="DROPMALFORMED")
+    df2 = sc2.read.csv(filename2, header=True, mode="DROPMALFORMED")
+
+    # remove the rows with empty entries in "Nom_parc" column
+    df1 = df1.na.drop(subset=["Nom_parc"])
+    df2 = df2.na.drop(subset=["Nom_parc"])
+
+    # select the "Nom_parc" column
+    # get the distinct entries in that column
+    # order the dataframe by alphabetical order
+    df1 = df1.select("Nom_parc").distinct().orderBy("Nom_parc")
+    df2 = df2.select("Nom_parc").distinct().orderBy("Nom_parc")
+
+    # intersection between two dataframes
+    df_intersection = df1.intersect(df2)
+
+    # return
+    return toCSVLine(df_intersection)
+
+    #raise NotImplementedError
 
 '''
 DASK IMPLEMENTATION
@@ -580,8 +679,16 @@ def count_dask(filename):
     Note: The return value should be an integer
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # load the CSV into dask dataframe
+    dask_df = df.read_csv(filename, dtype=str)
+
+    # count the number of rows in dataframe
+    num_rows = len(dask_df)
+
+    # return
+    return num_rows
+
+    #raise NotImplementedError
 
 def parks_dask(filename):
     '''
@@ -591,8 +698,19 @@ def parks_dask(filename):
     Note: The return value should be an integer
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # load the CSV into dask dataframe
+    dask_df = df.read_csv(filename, dtype=str)
+
+    # remove rows with empty entries in the "Nom_parc" column
+    dask_df = dask_df.dropna(subset=["Nom_parc"])
+
+    # count the number of rows in dataframe
+    num_rows = len(dask_df)
+
+    # return
+    return num_rows
+
+    #raise NotImplementedError
 
 def uniq_parks_dask(filename):
     '''
@@ -603,8 +721,24 @@ def uniq_parks_dask(filename):
     Note: The return value should be a CSV string
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # load the CSV into dask dataframe
+    dask_df = df.read_csv(filename, dtype=str)
+
+    # remove rows with empty entries in the "Nom_parc" column
+    dask_df = dask_df.dropna(subset=["Nom_parc"])
+
+    # getting the distinct values in the "Nom_parc" column
+    # sorting them in alphabetical order
+    dask_df = dask_df["Nom_parc"].unique().compute().sort_values()
+
+    # converting to CSV string
+    result = ''
+    for park in dask_df:
+        result += f'{park}\n'
+    return result
+
+
+    #raise NotImplementedError
 
 def uniq_parks_counts_dask(filename):
     '''
@@ -617,8 +751,24 @@ def uniq_parks_counts_dask(filename):
           Have a look at the file *tests/list_parks_count.txt* to get the exact return format.
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # load the CSV into dask dataframe
+    dask_df = df.read_csv(filename, dtype=str)
+
+    # remove rows with empty entries in the "Nom_parc" column
+    dask_df = dask_df.dropna(subset=["Nom_parc"])
+
+    # ?
+    dask_df = dask_df.groupby("Nom_parc").count().compute()
+
+    dask_df = dask_df.sort_values("Nom_parc")
+
+    result = ''
+    for park, count in dask_df.iterrows():
+        result += f'{park},{count[0]}\n'
+    print(result)
+    return result
+
+    #raise NotImplementedError
 
 def frequent_parks_count_dask(filename):
     '''
@@ -631,8 +781,24 @@ def frequent_parks_count_dask(filename):
           Have a look at the file *tests/frequent.txt* to get the exact return format.
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # load the CSV into dask dataframe
+    dask_df = df.read_csv(filename, dtype=str)
+
+    # remove rows with empty entries in the "Nom_parc" column
+    dask_df = dask_df.dropna(subset=["Nom_parc"])
+
+    # ?
+    dask_df = dask_df.groupby("Nom_parc").count().compute()
+
+    dask_df = dask_df.sort_values("Nom_arrond", ascending=False)
+    dask_df = dask_df.head(10)
+
+    result = ''
+    for park, count in dask_df.iterrows():
+        result += f'{park},{count[0]}\n'
+    return result
+
+    #raise NotImplementedError
 
 def intersection_dask(filename1, filename2):
     '''
@@ -644,5 +810,21 @@ def intersection_dask(filename1, filename2):
           Have a look at the file *tests/intersection.txt* to get the exact return format.
     '''
 
-    # ADD YOUR CODE HERE
-    raise NotImplementedError
+    # load the CSV into dask dataframe
+    dask_df1 = df.read_csv(filename1, dtype=str)
+    dask_df2 = df.read_csv(filename2, dtype=str)
+
+    # remove rows with empty entries in the "Nom_parc" column
+    dask_df1 = dask_df1.dropna(subset=["Nom_parc"])
+    dask_df2 = dask_df2.dropna(subset=["Nom_parc"])
+
+    dask_intersection = df.merge(dask_df1[["Nom_parc"]], dask_df2[["Nom_parc"]], on="Nom_parc", how="inner")
+
+    dask_intersection = dask_intersection["Nom_parc"].unique().compute()
+
+    result = ''
+    for park in dask_intersection:
+        result += f'{park}\n'
+    return result
+
+    #raise NotImplementedError
