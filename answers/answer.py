@@ -44,8 +44,8 @@ you should use them. Don't modify them!
 
 #Initialize a spark session.
 def init_spark():
-    import findspark
-    findspark.init()
+    #import findspark
+   # findspark.init()
     spark = SparkSession \
         .builder \
         .appName("Python Spark SQL basic example") \

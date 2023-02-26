@@ -1,5 +1,4 @@
 import os
-import findspark
 from answers.answer import count_df
 
 def test_count_df():
