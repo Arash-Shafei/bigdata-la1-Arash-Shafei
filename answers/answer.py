@@ -10,6 +10,7 @@ from pyspark.sql.functions import desc
 import dask.bag as db
 import dask.dataframe as df  # you can use Dask bags or dataframes
 from csv import reader
+import findspark
 
 
 '''
